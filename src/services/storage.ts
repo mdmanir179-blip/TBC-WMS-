@@ -1,4 +1,5 @@
 import { WmsProduct, WmsClaim, ClaimStatus, AuditLogEntry } from '../types/wms';
+import { cloudSync } from './cloudSync';
 
 // Import high-fidelity generated images
 import headphonesImg from '../assets/images/wms_prod_headphones_1790431718531.jpg';
@@ -254,11 +255,13 @@ export const storage = {
   getProducts(): WmsProduct[] {
     try {
       const data = localStorage.getItem(STORAGE_KEY_PRODUCTS);
-      if (data) return JSON.parse(data);
+      if (data !== null) {
+        return JSON.parse(data);
+      }
     } catch {
       // fallback
     }
-    // Seed initial
+    // Seed initial only when key is completely unset
     localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(INITIAL_PRODUCTS));
     return INITIAL_PRODUCTS;
   },
@@ -270,7 +273,9 @@ export const storage = {
   getClaims(): WmsClaim[] {
     try {
       const data = localStorage.getItem(STORAGE_KEY_CLAIMS);
-      if (data) return JSON.parse(data);
+      if (data !== null) {
+        return JSON.parse(data);
+      }
     } catch {
       // fallback
     }
@@ -295,6 +300,14 @@ export const storage = {
       prod.claimedSlots += 1;
       this.saveProducts(products);
     }
+
+    try {
+      fetch('/api/claims', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(claim)
+      }).catch(() => {});
+    } catch {}
   },
 
   updateClaim(claimId: string, updates: Partial<WmsClaim>, adminName = 'Executive Admin'): WmsClaim | null {
@@ -324,13 +337,29 @@ export const storage = {
 
     claims[index] = updated;
     this.saveClaims(claims);
+
+    try {
+      fetch(`/api/claims/${claimId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      }).catch(() => {});
+    } catch {}
+
     return updated;
   },
 
   addProduct(product: WmsProduct): void {
     const products = this.getProducts();
-    products.unshift(product);
+    const existingIdx = products.findIndex(p => p.id === product.id);
+    if (existingIdx !== -1) {
+      products[existingIdx] = product;
+    } else {
+      products.unshift(product);
+    }
     this.saveProducts(products);
+    cloudSync.broadcast('PRODUCT_ADDED', products, product.id);
+    cloudSync.saveProductToServer(product);
   },
 
   updateProduct(productId: string, updates: Partial<WmsProduct>): void {
@@ -339,22 +368,51 @@ export const storage = {
     if (idx !== -1) {
       products[idx] = { ...products[idx], ...updates };
       this.saveProducts(products);
+      cloudSync.broadcast('PRODUCT_UPDATED', products, productId);
+      cloudSync.saveProductToServer(products[idx]);
     }
   },
 
   deleteProduct(productId: string): void {
     const products = this.getProducts().filter(p => p.id !== productId);
     this.saveProducts(products);
+    cloudSync.broadcast('PRODUCT_DELETED', products, productId);
+    cloudSync.deleteProductFromServer(productId);
+  },
+
+  recordPayout(claimId: string, utrRef: string, adminName = 'Executive Admin'): WmsClaim | null {
+    const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+    return this.updateClaim(claimId, {
+      status: 'Paid',
+      payoutRefNo: utrRef,
+      paidAt: now
+    }, adminName);
   },
 
   resetToDemoData(): void {
     localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify(INITIAL_PRODUCTS));
     localStorage.setItem(STORAGE_KEY_CLAIMS, JSON.stringify(INITIAL_CLAIMS));
+    cloudSync.broadcast('SYNC_PRODUCTS', INITIAL_PRODUCTS);
+    cloudSync.resetDemoOnServer();
+  },
+
+  resetAllData(): void {
+    this.resetToDemoData();
   },
 
   clearAllData(): void {
     localStorage.setItem(STORAGE_KEY_PRODUCTS, JSON.stringify([]));
     localStorage.setItem(STORAGE_KEY_CLAIMS, JSON.stringify([]));
+    cloudSync.broadcast('SYNC_PRODUCTS', []);
+    cloudSync.cleanSlateOnServer();
+  },
+
+  cleanSlate(): void {
+    this.clearAllData();
+  },
+
+  exportClaimsAsCsv(): string {
+    return this.exportClaimsToCsv(this.getClaims());
   },
 
   exportDatabaseJson(): string {

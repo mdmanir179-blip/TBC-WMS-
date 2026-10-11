@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, ZoomIn, Download, ExternalLink } from 'lucide-react';
+import { X, ZoomIn, Download } from 'lucide-react';
 
 interface ProofLightboxProps {
   isOpen: boolean;
@@ -20,21 +20,21 @@ export const ProofLightbox: React.FC<ProofLightboxProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
       onClick={onClose}
     >
       <div
-        className="relative max-w-4xl w-full bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative max-w-4xl w-full bg-white border border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/70">
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <ZoomIn className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <ZoomIn className="w-4 h-4 text-indigo-600" />
               {title}
             </h3>
-            {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
+            {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
           </div>
           <div className="flex items-center gap-2">
             <a
@@ -42,14 +42,14 @@ export const ProofLightbox: React.FC<ProofLightboxProps> = ({
               download="wms-proof.png"
               target="_blank"
               rel="noreferrer"
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
               title="Download or open original"
             >
               <Download className="w-4 h-4" />
             </a>
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -57,18 +57,18 @@ export const ProofLightbox: React.FC<ProofLightboxProps> = ({
         </div>
 
         {/* Image Content Container */}
-        <div className="p-4 sm:p-6 flex-1 overflow-auto flex items-center justify-center bg-slate-950/40">
+        <div className="p-4 sm:p-6 flex-1 overflow-auto flex items-center justify-center bg-slate-50/50">
           <img
             src={imageUrl}
             alt={title}
-            className="max-h-[72vh] w-auto max-w-full object-contain rounded-xl shadow-lg border border-slate-800/80 bg-slate-900"
+            className="max-h-[72vh] w-auto max-w-full object-contain rounded-2xl shadow-lg border border-slate-200 bg-white"
           />
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between text-xs text-slate-400">
+        <div className="px-6 py-3 border-t border-slate-100 bg-slate-50/70 flex items-center justify-between text-xs text-slate-500">
           <span>Click anywhere outside or press Esc to close</span>
-          <span className="font-mono text-emerald-400 font-semibold">100% High-Resolution Inspection</span>
+          <span className="font-mono text-emerald-700 font-semibold">100% High-Resolution Inspection</span>
         </div>
       </div>
     </div>
